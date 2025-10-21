@@ -5,7 +5,7 @@
 	<name>Document Control Tags</name>
 	<summary>Allows users to see file tag counts</summary>
 	<description>Allows users to see file tag counts related to deputy document control</description>
-	<version>1.0.0</version>
+	<version>1.0.4</version>
 	<licence>agpl</licence>
 	<author mail="chrisdominic@filamer.edu.ph" homepage="">Chris Dominic Chan</author>
 	<namespace>DocumentControlTags</namespace>
@@ -14,6 +14,9 @@
 	<dependencies>
 		<nextcloud min-version="30" max-version="32"/>
 	</dependencies>
+	<background-jobs>
+		<job>OCA\DocumentControlTags\BackgroundJobs\DocumentArchiver</job>
+	</background-jobs>
 	<!-- <navigations>
 		<navigation>
 			<id>documentcontroltags</id>
