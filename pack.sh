@@ -1,1 +1,1 @@
-tar --exclude="node_modules" --exclude=".git" --exclude="vendor-bin" --exclude=".github" --exclude=".stubs" -czvf ../documentcontroltags.tar.gz .
+zip -r ../documentcontroltags.zip . -x "node_modules/*" -x ".git/*" -x "vendor-bin/*" -x ".github/*" -x ".stubs/*" -x "*/._*" -x "*.DS_Store" -x "__MACOSX/*"
