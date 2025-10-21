@@ -1,0 +1,1 @@
+tar --exclude="node_modules" --exclude=".git" --exclude="vendor-bin" --exclude=".github" --exclude=".stubs" -czvf ../documentcontroltags.tar.gz .
