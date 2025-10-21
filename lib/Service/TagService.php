@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace OCA\DocumentControlTags\Service;
 
+use DateTime;
 use OCP\Dashboard\Model\WidgetItem;
+use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IDBConnection;
 use OCP\IURLGenerator;
@@ -84,7 +86,35 @@ class TagService
 
     public function getArchivedTodayCount(): int
     {
-        return 2;
+        $userId = $this->userSession->getUser()->getUID();
+        $rootFolder = $this->rootFolder->getUserFolder($userId);
+
+        $targetNode = $rootFolder->get('Archived Documents');
+
+        if ($targetNode instanceof Folder) {
+            $listing = $targetNode->getDirectoryListing();
+            $count = 0;
+
+            foreach ($listing as $node) {
+                $path = $node->getPath();
+                $pattern = '/\(Archived@([0-9]{2}-[0-9]{2}-[0-9]{2})\)/';
+
+                if (preg_match($pattern, $path, $matches)) {
+                    $date = $matches[1];
+                }
+
+                $format = 'd-m-y'; // 'y' for two-digit year, 'm' for month, 'd' for day
+                $dateTime = DateTime::createFromFormat($format, $date);
+
+                if ($dateTime && $dateTime->format('y-m-d') === date('y-m-d')) {
+                    $count++;
+                }
+            }
+
+            return $count;
+        }
+
+        return 0;
     }
 
     public function getUploadedTodayCount(): int
