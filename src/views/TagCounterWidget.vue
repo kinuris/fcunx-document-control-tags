@@ -1,5 +1,16 @@
 <template>
     <div class="scrollable-container">
+        <div class="today-stats">
+            <div class="stat-item">
+                <span class="stat-label">Archived Today</span>
+                <span class="stat-count">{{ archivedTodayCount }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Uploaded Today</span>
+                <span class="stat-count">{{ uploadedTodayCount }}</span>
+            </div>
+        </div>
+
         <NcDashboardWidget :items="items" :show-more-url="showMoreUrl" :show-more-text="title"
             :loading="state === 'loading'">
             <template #empty-content>
@@ -13,6 +24,7 @@
                 </NcEmptyContent>
             </template>
         </NcDashboardWidget>
+
         <div class="chart-container">
             <canvas ref="mainChartCanvas"></canvas>
         </div>
@@ -46,7 +58,8 @@ export default {
     },
     data: () => {
         const items = loadState('documentcontroltags', 'dashboard');
-        console.log(items);
+        const archivedCount = loadState('documentcontroltags', 'archived');
+        const uploadedCount = loadState('documentcontroltags', 'uploaded');
 
         return {
             tagItems: items,
@@ -54,6 +67,8 @@ export default {
             state: 'ok',
             chart: null,
             mainChart: null,
+            archivedCount: archivedCount,
+            uploadedCount: uploadedCount,
         }
     },
     computed: {
@@ -71,6 +86,12 @@ export default {
                 label: tag.title.split('').filter(char => char >= 'A' && char <= 'Z').join('.'),
                 value: tag.subtitle,
             }));
+        },
+        archivedTodayCount() {
+            return this.archivedCount;
+        },
+        uploadedTodayCount() {
+            return this.uploadedCount;
         }
     },
     watch: {
@@ -187,23 +208,58 @@ export default {
 
 <style scoped>
 .scrollable-container {
+    height: 100%;
     max-height: 428px;
     overflow-y: auto;
-    padding-right: 10px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .chart-container {
     width: 100%;
-    height: 300px;
-    margin: 4px 0;
-    padding: 10px;
+    min-height: 264px;
+    padding: 16px;
     background-color: var(--color-main-background);
     border-radius: var(--border-radius-large);
-    box-shadow: 0 2px 4px var(--color-box-shadow);
+    border: 1px solid var(--color-border);
 }
 
 .chart-container canvas {
     max-width: 100%;
     height: 100%;
+}
+
+.today-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 12px;
+    background-color: var(--color-main-background);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-large);
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-maxcontrast);
+}
+
+.stat-count {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-primary-element);
+    line-height: 1;
 }
 </style>

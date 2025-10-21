@@ -60,6 +60,18 @@ class TagCounterWidget implements IAPIWidget
                 'dashboard',
                 $items
             );
+
+            $archivedCount = $this->tagService->getArchivedTodayCount();
+            $this->initialStateService->provideInitialState(
+                'archived',
+                $archivedCount
+            );
+
+            $uploadedCount = $this->tagService->getUploadedTodayCount();
+            $this->initialStateService->provideInitialState(
+                'uploaded',
+                $uploadedCount
+            );
         }
 
         Util::addScript(Application::APP_ID, Application::APP_ID . '-tagCounterWidget');
