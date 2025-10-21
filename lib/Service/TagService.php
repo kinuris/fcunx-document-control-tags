@@ -48,10 +48,13 @@ class TagService
         $iter = 0;
         foreach ($tags as $tagName) {
             $count = $this->getFileCountOfTag($tagName);
+            $id = $this->getTagId($tagName);
+            $url = $this->urlGen->getAbsoluteURL('/apps/files/tags/' . $id);
+
             $result[] = new WidgetItem(
                 $tagName,
                 (string) $count,
-                '',
+                $url,
                 $paths[$iter]
             );
 
@@ -61,8 +64,33 @@ class TagService
         return $result;
     }
 
+    public function getTagId(string $tagName): ?string
+    {
+        $existing = $this->tagManager->getAllTags();
+        foreach ($existing as $tag) {
+            if ($tag->getName() === $tagName) {
+                return (string) $tag->getId();
+            }
+        }
+
+        return null;
+    }
+
     public function getFileCountOfTag(string $tagName): int
     {
+        $existing = $this->tagManager->getAllTags();
+        $exists = false;
+
+        foreach ($existing as $tag) {
+            if ($tag->getName() === $tagName) {
+                $exists = true;
+            }
+        }
+
+        if (!$exists) {
+            return 0;
+        }
+
         $tagHandle = $this->tagManager->getTag($tagName, true, true);
 
         $qb = $this->db->getQueryBuilder();
@@ -89,7 +117,11 @@ class TagService
         $userId = $this->userSession->getUser()->getUID();
         $rootFolder = $this->rootFolder->getUserFolder($userId);
 
-        $targetNode = $rootFolder->get('Archived Documents');
+        try {
+            $targetNode = $rootFolder->get('Archived Documents');
+        } catch (\OCP\Files\NotFoundException $e) {
+            return 0;
+        }
 
         if ($targetNode instanceof Folder) {
             $listing = $targetNode->getDirectoryListing();
@@ -119,12 +151,73 @@ class TagService
 
     public function getUploadedTodayCount(): int
     {
-        return 1;
+        $tagName = "Requires Approval";
+        $existing = $this->tagManager->getAllTags();
+        $exists = false;
+
+        foreach ($existing as $tag) {
+            if ($tag->getName() === $tagName) {
+                $exists = true;
+            }
+        }
+
+        if (!$exists) {
+            return 0;
+        }
+
+        $tagHandle = $this->tagManager->getTag($tagName, true, true);
+
+        $qb = $this->db->getQueryBuilder();
+        $qb = $qb->select('*')
+            ->from('systemtag_object_mapping')
+            ->where(
+                $qb->expr()
+                    ->eq(
+                        'systemtagid',
+                        $qb->createNamedParameter($tagHandle->getId())
+                    )
+            );
+
+        $result = $qb->executeQuery();
+        $records = $result->fetchAll();
+
+        $count = 0;
+        foreach ($records as $record) {
+            $node = $this->rootFolder->getFirstNodeById((int) $record['objectid']);
+
+            if ($node instanceof Folder) {
+                $nodes = $node->getDirectoryListing();
+                foreach ($nodes as $subNode) {
+                    $uploadTime = $subNode->getUploadTime();
+                    $uploadDate = date('y-m-d', $uploadTime);
+                    $currentDate = date('y-m-d');
+
+                    if ($uploadDate === $currentDate) {
+                        $count++;
+                    }
+                }
+            }
+        }
+
+        return $count;
     }
 
     public function archiveFiles5Y()
     {
         $tagName = 'Archive: 5Y';
+        $existing = $this->tagManager->getAllTags();
+        $exists = false;
+
+        foreach ($existing as $tag) {
+            if ($tag->getName() === $tagName) {
+                $exists = true;
+            }
+        }
+
+        if (!$exists) {
+            return 0;
+        }
+
         $tagHandle = $this->tagManager->getTag($tagName, true, true);
 
         $qb = $this->db->getQueryBuilder();
@@ -183,8 +276,5 @@ class TagService
             // Move file to Archive folder with new name
             $file->move($archiveFolder->getPath() . '/' . $archivedName);
         }
-
-        var_dump($filesToArchive);
-        die;
     }
 }
