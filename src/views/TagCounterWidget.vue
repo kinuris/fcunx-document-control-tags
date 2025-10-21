@@ -78,6 +78,7 @@ export default {
                 mainText: tag.title,
                 subText: tag.subtitle + (tag.subtitle == 1 ? ' Document' : ' Documents'),
                 avatarUrl: tag.iconUrl,
+                targetUrl: tag.link,
             }));
         },
         graphInput() {
@@ -169,8 +170,7 @@ export default {
                     },
                     plugins: {
                         legend: {
-                            display: true,
-                            position: 'top',
+                            display: false,
                         },
                         title: {
                             display: true,
