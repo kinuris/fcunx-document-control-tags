@@ -8,10 +8,12 @@ use DateTime;
 use OCP\Dashboard\Model\WidgetItem;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
+use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\SystemTag\ISystemTagManager;
+use Psr\Log\LoggerInterface;
 
 class TagService
 {
@@ -20,19 +22,25 @@ class TagService
     private IURLGenerator $urlGen;
     private IRootFolder $rootFolder;
     private IUserSession $userSession;
+    private IConfig $config;
+    private LoggerInterface $logger;
 
     public function __construct(
         ISystemTagManager $tagManager,
         IDBConnection $db,
         IURLGenerator $urlGen,
         IRootFolder $rootFolder,
-        IUserSession $userSession
+        IUserSession $userSession,
+        IConfig $config,
+        LoggerInterface $logger
     ) {
         $this->tagManager = $tagManager;
         $this->db = $db;
         $this->urlGen = $urlGen;
         $this->rootFolder = $rootFolder;
         $this->userSession = $userSession;
+        $this->config = $config;
+        $this->logger = $logger;
     }
 
     public function getWidgetItems(): array
@@ -106,10 +114,16 @@ class TagService
 
         $result = $qb->executeQuery();
         $records = $result->fetchAll();
+        
+        $count = 0;
+        foreach ($records as $record) {
+            $node = $this->rootFolder->getFirstNodeById((int) $record['objectid']);
 
-        // TODO: Handle folders 
+            if ($node !== null) 
+                $count++;
+        }
 
-        return count($records);
+        return $count;
     }
 
     public function getArchivedTodayCount(): int
@@ -235,8 +249,19 @@ class TagService
         $records = $result->fetchAll();
 
         $filesToArchive = [];
+
+        // NOTE: Skip the archiving process if document controller is not set
+        $documentController = $this->config->getSystemValueString('documentcontroltags.univ_doc_controller');
+        if ($documentController === '') {
+            $this->logger->warning('University Document Controller is not set. Skipping archiving process. Please set it using `occ config:system:set \'documentcontroltags.univ_doc_controller\' --value="<username>"`');
+
+            return;
+        }
+
         foreach ($records as $record) {
-            $node = $this->rootFolder->getFirstNodeById((int) $record['objectid']);
+            // TODO: Null when run as Background Job
+            $rootFolder = $this->rootFolder->getUserFolder($documentController);
+            $node = $rootFolder->getFirstNodeById((int) $record['objectid']);
 
             if (str_contains($node->getParent()->getPath(), '/Archived Documents') || str_contains($node->getParent()->getPath(), '/files_trashbin')) {
                 continue;
@@ -254,8 +279,9 @@ class TagService
             $filesToArchive[] = $node;
         }
 
-        $userId = $this->userSession->getUser()->getUID();
-        $rootFolder = $this->rootFolder->getUserFolder($userId);
+        // TODO: No user when run as background job
+        // $userId = $this->userSession->getUser()->getUID();
+        $rootFolder = $this->rootFolder->getUserFolder($documentController);
 
         foreach ($filesToArchive as $file) {
             $archiveFolder = null;
