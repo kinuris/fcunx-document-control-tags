@@ -114,12 +114,17 @@ class TagService
 
         $result = $qb->executeQuery();
         $records = $result->fetchAll();
-        
+
         $count = 0;
         foreach ($records as $record) {
             $node = $this->rootFolder->getFirstNodeById((int) $record['objectid']);
 
-            if ($node !== null) 
+            $path = $node->getPath();
+            if (str_contains($path, '/files_trashbin/')) {
+                continue;
+            }
+
+            if ($node !== null)
                 $count++;
         }
 

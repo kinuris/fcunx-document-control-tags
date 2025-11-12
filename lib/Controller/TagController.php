@@ -36,13 +36,11 @@ class TagController extends Controller
     #[FrontpageRoute(verb: 'GET', url: '/tag/{tagName}')]
     public function getFileByTag($tagName): DataResponse
     {
-        $count = $this->tagService->getFileCountOfTag(urldecode($tagName));
+        // $this->tagService->archiveFiles5Y();
+        $count = $this->tagService->getFileCountOfTag('Approved Document');
+        var_dump($count);
+        die;
 
-        $data = [
-            'status' => 'success',
-            'count' => $count,
-        ];
-
-        return new DataResponse($data);
+        return new DataResponse('');
     }
 }
